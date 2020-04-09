@@ -176,13 +176,13 @@ class EasynetComments(object):
                         # 存储评论者的信息
                         # 加入歌曲id
                         i.update({"songid":songid})
-                        db.hotcomments.insert_one(i)
+                        db.hot_tmp_comments.insert_one(i)
                     # with open("sb.json","w") as f:
                     #     f.write(ss)
                     # 存储普通的最新评论
                     for i in ss["comments"]:
                         i.update({"songid":songid})
-                        db.comments.insert_one(i)
+                        db.test_comments.insert_one(i)
                     return ss["total"]
             except Exception as e:
                 f += 1
@@ -217,13 +217,15 @@ class EasynetComments(object):
                 # print(r.json()['comments'])
                 ss = json.loads(r.text)
                 # 存入数据库
-                print(ss)
+                # print(ss)
                 print(ss["comments"])
                 for i in ss["comments"]:
                     i.update({"songid":songid})
-                    db.comments.insert_one(i)
-                    print("入库了")
-                print("存入数据库")
+                    db.test_comments.insert_one(i)
+                    print("评论",i["content"])
+                    print("评论者id",i["user"]["userId"])
+                #     print("入库了")
+                # print("存入数据库")
                 return
                 # 存入数据库
                 # with open("sb.json","w") as f:
@@ -246,8 +248,10 @@ def main():
         for songid in getalbumsongid.get_song(id_dict,album[id_dict]):
             easynetcomments = EasynetComments()
             # 获取精彩评论和最新评论并将评论数返回
+            songid = "167837"
             number = easynetcomments.get_hot_comments(songid)
             number = int(number)
+            print("歌曲总数",number)
             # 评论数小于20,直接抓取下一首歌曲评论
             if number <= 20:
                 print("小于20")
@@ -265,17 +269,18 @@ def main():
             #     print("第",i,"页")
             #     easynetcomments.get_comment(songid,number_int)
             alist = []
-            for i in range(1,page+1):
+            for i in range(1,page):
                 alist.append(i)
             i = 0
             while len(alist)>0:
                 pag = random.choice(alist)
                 alist.remove(pag)
+                pag = pag*100+20
                 print("第",i,"页")
-                easynetcomments.get_comment(songid,number_int)
+                easynetcomments.get_comment(songid,pag)
                 i+=1
-            
-            
+        
+        
 
 
 if __name__ == "__main__":
