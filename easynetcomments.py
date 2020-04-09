@@ -241,45 +241,45 @@ class EasynetComments(object):
 
 
 def main():
-    # getalbumsongid = GetAlbumSongId()
-    # album = getalbumsongid.get_album()
-    # for id_dict in album.keys():
-    #     # 获取了一个专辑所有的歌曲id
-    #     for songid in getalbumsongid.get_song(id_dict,album[id_dict]):
-        easynetcomments = EasynetComments()
-        # 获取精彩评论和最新评论并将评论数返回
-        songid = "167837"
-        number = easynetcomments.get_hot_comments(songid)
-        number = int(number)
-        print("歌曲总数",number)
-        # 评论数小于20,直接抓取下一首歌曲评论
-        if number <= 20:
-            print("小于20")
-            # continue
-        # limit=100,偏移量从20开始获取剩下的评论
-        page = int((number-20)/100)+1
-        number_int = int(number)
-        # 一次循环100个评论
-        # for i in range(1,number_new+1):
-        #     num = i*100+20
-        #     print("第",i,"页")
-        #     easynetcomments.get_comment(songid,num)
-        # for i in range(1,page+1):
-        #     number_int = number_int-100
-        #     print("第",i,"页")
-        #     easynetcomments.get_comment(songid,number_int)
-        alist = []
-        for i in range(1,page):
-            alist.append(i)
-        i = 0
-        # while len(alist)>0:
-        #     pag = random.choice(alist)
-        #     alist.remove(pag)
-        #     pag = pag*100+20
-        #     print("第",i,"页")
-        #     easynetcomments.get_comment(songid,pag)
-        #     i+=1
-        easynetcomments.get_comment(songid,4900)
+    getalbumsongid = GetAlbumSongId()
+    album = getalbumsongid.get_album()
+    for id_dict in album.keys():
+        # 获取了一个专辑所有的歌曲id
+        for songid in getalbumsongid.get_song(id_dict,album[id_dict]):
+            easynetcomments = EasynetComments()
+            # 获取精彩评论和最新评论并将评论数返回
+            songid = "167837"
+            number = easynetcomments.get_hot_comments(songid)
+            number = int(number)
+            print("歌曲总数",number)
+            # 评论数小于20,直接抓取下一首歌曲评论
+            if number <= 20:
+                print("小于20")
+                continue
+            # limit=100,偏移量从20开始获取剩下的评论
+            page = int((number-20)/100)+1
+            number_int = int(number)
+            # 一次循环100个评论
+            # for i in range(1,number_new+1):
+            #     num = i*100+20
+            #     print("第",i,"页")
+            #     easynetcomments.get_comment(songid,num)
+            # for i in range(1,page+1):
+            #     number_int = number_int-100
+            #     print("第",i,"页")
+            #     easynetcomments.get_comment(songid,number_int)
+            alist = []
+            for i in range(1,page):
+                alist.append(i)
+            i = 0
+            while len(alist)>0:
+                pag = random.choice(alist)
+                alist.remove(pag)
+                pag = pag*100+20
+                print("第",i,"页")
+                easynetcomments.get_comment(songid,pag)
+                i+=1
+        
         
 
 
