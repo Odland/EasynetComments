@@ -232,7 +232,7 @@ class EasynetComments(object):
                 print(ss["comments"])
                 for i in ss["comments"]:
                     i.update({"songid":songid})
-                    db.test_comments.insert_one(i)
+                    db.comments.insert_one(i)
                     print("评论",i["content"])
                     print("评论者id",i["user"]["userId"])
                 #     print("入库了")
