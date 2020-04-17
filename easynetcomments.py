@@ -12,6 +12,10 @@ import random
 import time
 import sys
 
+import asyncio
+import aiohttp
+
+import ujson
 import numpy as np
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
@@ -78,6 +82,7 @@ class EasynetComments(object):
     def __init__(self,key = '0CoJUm6Qyw8W8jud',
                     n = "00e0b509f6259df8642dbc35662901477df22677ec152b5ff68ace615bb7b725152b3ab17a876aea8a5aa76d2e417629ec4ee341f56135fccf695280104e0312ecbda92557c93870114af6c9d05c4f7f0c3685b7a46bee255932575cce10b424d813cfe4875d3e82047b97ddef52741d546b8e289dc6935b3ece0462db0a22b8e7",
                     e = '010001'):
+        self.session = aiohttp.ClientSession()
         # aes加密所需的秘钥
         self.key = key
         # rsa加密所需的模数
@@ -102,7 +107,7 @@ class EasynetComments(object):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                         'Chrome/66.0.3359.181 Safari/537.36'}
         
-    def aes(self,msg,key):
+    async def aes(self,msg,key):
         # key = '0CoJUm6Qyw8W8jud'
         # msg = '{"csrf_token":""}'
         iv = '0102030405060708'
@@ -122,7 +127,7 @@ class EasynetComments(object):
         return enctext
         
 
-    def rsa(self,n,e,m):
+    async def rsa(self,n,e,m):
         m = m[::-1]
         msg = bytes(m,"utf-8")
         # seckey = int(codecs.encode(msg, encoding='hex'), 16)**int(e, 16) % int(n, 16)
@@ -130,6 +135,7 @@ class EasynetComments(object):
         b = np.array([int(n, 16)])
         seckey = np.mod(a,b)[0]
         return format(seckey, 'x').zfill(256)
+
 
     def random_str(self,length=16):
         """获得一个16位的随机字符串"""
@@ -146,76 +152,81 @@ class EasynetComments(object):
         #     random_strs += string[random.randint(0,61)]
         return string_new
     
-    def get_hot_comments(self,songid,msg = '{"limit":"20","csrf_token":""}'):
+    async def get_hot_comments(self,songid,msg = '{"limit":"20","csrf_token":""}'):
         # 获取第一页数据 包括热评和最新的评论
         istr = self.random_str()
-        enctext = self.aes(msg,self.key)
-        encText = self.aes(enctext, istr)
+        enctext = await self.aes(msg,self.key)
+        encText = await self.aes(enctext, istr)
         # RSA加密之后得到encSecKey的值
-        encSecKey = self.rsa(self.n, self.e, istr)
+        encSecKey = await self.rsa(self.n, self.e, istr)
         data = {'params': encText, 'encSecKey': encSecKey}
         url = "https://music.163.com/weapi/v1/resource/comments/R_SO_4_{}?csrf_token=".format(songid)
         # try:
         f = 0
         while f<3:  
             try:
-                r = requests.post(url, headers=self.headers, data=data,verify=False)
-                r.encoding = "utf-8"
-                if r.status_code == 200:
-                    # 返回json格式的数据
-                    ss = json.loads(r.text)
-                    # print(type(ss))
-                    # print(ss["total"])
-                    # print(ss)
-                    # print("歌曲id是",songid )
-                    # 将热门的评论存储到mongodb中集合hotcomments中
-                    total = int(ss["total"])
-                    if total == 0:
-                        return 0
-                    for i in ss["hotComments"]:
-                        # 存储评论者的信息
-                        # 加入歌曲id
-                        i.update({"songid":songid})
-                        db.hot_tmp_comments.insert_one(i)
-                    # with open("sb.json","w") as f:
-                    #     f.write(ss)
-                    # 存储普通的最新评论
-                    for i in ss["comments"]:
-                        i.update({"songid":songid})
-                        db.test_comments.insert_one(i)
-                    return ss["total"]
-            except Exception as e:
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, data=data,headers=self.headers) as r:
+                        
+                        # print(await res.text())
+                        # print(r.text())
+                        
+                        if r.status == 200:
+                            # 返回json格式的数据
+                            ss = json.loads(await r.text())
+                            print(ss)
+                            # print(type(ss))
+                            # print(ss["total"])
+                            # print(ss)
+                            # print("歌曲id是",songid )
+                            # 将热门的评论存储到mongodb中集合hotcomments中
+                            total = int(ss["total"])
+                            if total == 0:
+                                return 0
+                            for i in ss["hotComments"]:
+                                # 存储评论者的信息
+                                # 加入歌曲id
+                                i.update({"songid":songid})
+                                db.hot_tmp_comments.insert_one(i)
+                            # with open("sb.json","w") as f:
+                            #     f.write(ss)
+                            # 存储普通的最新评论
+                            for i in ss["comments"]:
+                                i.update({"songid":songid})
+                                db.test_comments.insert_one(i)
+                            return ss["total"]
+            except KeyError as e:
                 f += 1
                 print("获取精彩数据失败",e)
         return 0
         # except Exception as e:
         #     print("爬取失败!",e)
     
-    def get_comment(self,songid,num):
+    async def get_comment(self,songid,num):
         """获取其余的评论"""
         # msg = '{"limit":"20","csrf_token":""}'
         istr = self.random_str()
         msg = '{"offset":"'+str(num)+'","total":"false","limit":"100","csrf_token":""}'
         url = "https://music.163.com/weapi/v1/resource/comments/R_SO_4_{}?csrf_token=".format(songid)
-        enctext = self.aes(msg,self.key)
-        encText = self.aes(enctext, istr)
+        enctext = await self.aes(msg,self.key)
+        encText = await self.aes(enctext, istr)
         # RSA加密之后得到encSecKey的值
-        encSecKey = self.rsa(self.n, self.e, istr)
+        encSecKey = await self.rsa(self.n, self.e, istr)
         data = {'params': encText, 'encSecKey': encSecKey}
-        self.get_comments_json(url,data,songid)
+        await self.get_comments_json(url,data,songid)
 
-    def get_comments_json(self,url, data,songid):
+    async def get_comments_json(self,url, data,songid):
         # flag = True
         f = 0
         while f<3:  
             try:
-                time.sleep(random.random())
-                r = requests.post(url, headers=self.headers, data=data,verify=False)
-                r.encoding = "utf-8"
+                async with aiohttp.ClientSession() as session:
+                    async with session.post(url, data=data,headers=self.headers) as r:
+                        r = await self.session.post(url, headers=self.headers, data=data)
                 # if r.status_code == 200:
                 # 返回json格式的数据
                 # print(r.json()['comments'])
-                ss = json.loads(r.text)
+                ss = json.loads(await r.text())
                 # 存入数据库
                 # print(ss)
                 print(ss["comments"])
@@ -243,53 +254,57 @@ class EasynetComments(object):
 def main():
     getalbumsongid = GetAlbumSongId()
     album = getalbumsongid.get_album()
+    songid_list = []
     for id_dict in album.keys():
         # 获取了一个专辑所有的歌曲id
-        for songid in getalbumsongid.get_song(id_dict,album[id_dict]):
-            easynetcomments = EasynetComments()
-            # 获取精彩评论和最新评论并将评论数返回
-            songid = "167837"
-            number = easynetcomments.get_hot_comments(songid)
-            number = int(number)
-            print("歌曲总数",number)
-            # 评论数小于20,直接抓取下一首歌曲评论
-            if number <= 20:
-                print("小于20")
-                continue
-            # limit=100,偏移量从20开始获取剩下的评论
-            page = int((number-20)/100)+1
-            number_int = int(number)
-            # 一次循环100个评论
-            # for i in range(1,number_new+1):
-            #     num = i*100+20
-            #     print("第",i,"页")
-            #     easynetcomments.get_comment(songid,num)
-            # for i in range(1,page+1):
-            #     number_int = number_int-100
-            #     print("第",i,"页")
-            #     easynetcomments.get_comment(songid,number_int)
-            alist = []
-            for i in range(1,page):
-                alist.append(i)
-            i = 0
-            while len(alist)>0:
-                pag = random.choice(alist)
-                alist.remove(pag)
-                pag = pag*100+20
-                print("第",i,"页")
-                easynetcomments.get_comment(songid,pag)
-                i+=1
-        
+        songidlist = [i for i in getalbumsongid.get_song(id_dict,album[id_dict])]
+        songid_list.extend(songidlist)
+    return songid_list
+
+
+
+
+
+
+async def run(songid,easynetcomments):
+    # 获取精彩评论和最新评论并将评论数返回
+    number = await easynetcomments.get_hot_comments(songid)
+    number = int(number)
+    print("歌曲总数",number)
+    # 评论数小于20,直接抓取下一首歌曲评论
+    if number <= 20:
+        print("小于20")
+        return
+    # limit=100,偏移量从20开始获取剩下的评论
+    page = int((number-20)/100)+1
+    number_int = int(number)
+    alist = []
+    for i in range(1,page):
+        alist.append(i)
+    i = 0
+    while len(alist)>0:
+        pag = random.choice(alist)
+        alist.remove(pag)
+        pag = pag*100+20
+        print("第",i,"页")
+        await easynetcomments.get_comment(songid,pag)
+        i+=1
+
+
+
         
 
 
 if __name__ == "__main__":
-    main()
-    
-    
-
-
-
-
-
-    
+    songid_list = main()
+    easynetcomments = EasynetComments()
+    j = 0
+    for i in range(1,len(songid_list)//50 + 1 if len(songid_list)%50==0 else len(songid_list)//50 + 2):
+        j,i = i*50,j
+        tasks = (run(v,easynetcomments) for v in songid_list[i:j])
+        # loop = asyncio.get_event_loop()
+        print("哈哈哈哈哈")
+        asyncio.set_event_loop(asyncio.new_event_loop()) 
+        loop = asyncio.get_event_loop()
+        loop.run_until_complete(asyncio.gather(*tasks))
+        loop.close()
