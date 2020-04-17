@@ -13,17 +13,11 @@ import time
 import sys
 
 import numpy as np
-
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
-
 
 myclient = pymongo.MongoClient("mongodb://{}:{}@{}:{}/{}".format("field","256257","120.24.150.107","27017","easynet"))
 db = myclient.easynet
-
-
 
 
 class  GetAlbumSongId(object):
@@ -66,12 +60,6 @@ class  GetAlbumSongId(object):
         return song_ids
 
         
-
-
-
-
-
-
 class EasynetComments(object):
     """模拟加密参数,获取网易云音乐"""
 
@@ -121,7 +109,6 @@ class EasynetComments(object):
         # print(enctext)
         return enctext
         
-
     def rsa(self,n,e,m):
         m = m[::-1]
         msg = bytes(m,"utf-8")
@@ -237,9 +224,6 @@ class EasynetComments(object):
             return
     
 
-
-
-
 def main():
     getalbumsongid = GetAlbumSongId()
     album = getalbumsongid.get_album()
@@ -248,7 +232,7 @@ def main():
         for songid in getalbumsongid.get_song(id_dict,album[id_dict]):
             easynetcomments = EasynetComments()
             # 获取精彩评论和最新评论并将评论数返回
-            songid = "167837"
+            # songid = "167837"
             number = easynetcomments.get_hot_comments(songid)
             number = int(number)
             print("歌曲总数",number)
@@ -259,15 +243,6 @@ def main():
             # limit=100,偏移量从20开始获取剩下的评论
             page = int((number-20)/100)+1
             number_int = int(number)
-            # 一次循环100个评论
-            # for i in range(1,number_new+1):
-            #     num = i*100+20
-            #     print("第",i,"页")
-            #     easynetcomments.get_comment(songid,num)
-            # for i in range(1,page+1):
-            #     number_int = number_int-100
-            #     print("第",i,"页")
-            #     easynetcomments.get_comment(songid,number_int)
             alist = []
             for i in range(1,page):
                 alist.append(i)
@@ -280,8 +255,6 @@ def main():
                 easynetcomments.get_comment(songid,pag)
                 i+=1
         
-        
-
 
 if __name__ == "__main__":
     main()
