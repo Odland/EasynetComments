@@ -15,19 +15,14 @@ import sys
 import asyncio
 import aiohttp
 
-import ujson
 import numpy as np
 
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
-
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
-
 
 
 myclient = pymongo.MongoClient("mongodb://{}:{}@{}:{}/{}".format("field","256257","120.24.150.107","27017","easynet"))
 db = myclient.easynet
-
-
 
 
 class  GetAlbumSongId(object):
@@ -70,12 +65,6 @@ class  GetAlbumSongId(object):
         return song_ids
 
         
-
-
-
-
-
-
 class EasynetComments(object):
     """模拟加密参数,获取网易云音乐"""
 
@@ -125,7 +114,6 @@ class EasynetComments(object):
         enctext = encodestrs.decode('utf-8')
         # print(enctext)
         return enctext
-        
 
     def rsa(self,n,e,m):
         m = m[::-1]
@@ -135,7 +123,6 @@ class EasynetComments(object):
         b = np.array([int(n, 16)])
         seckey = np.mod(a,b)[0]
         return format(seckey, 'x').zfill(256)
-
 
     def random_str(self,length=16):
         """获得一个16位的随机字符串"""
@@ -167,10 +154,6 @@ class EasynetComments(object):
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.post(url, data=data,headers=self.headers) as r:
-                        
-                        # print(await res.text())
-                        # print(r.text())
-                        
                         if r.status == 200:
                             # 返回json格式的数据
                             ss = json.loads(await r.text())
@@ -246,10 +229,6 @@ class EasynetComments(object):
                 # flag = False
                 f += 1
             return
-    
-
-
-
 
 def main():
     getalbumsongid = GetAlbumSongId()
@@ -260,11 +239,6 @@ def main():
         songidlist = [i for i in getalbumsongid.get_song(id_dict,album[id_dict])]
         songid_list.extend(songidlist)
     return songid_list
-
-
-
-
-
 
 async def run(songid,easynetcomments):
     # 获取精彩评论和最新评论并将评论数返回
@@ -289,10 +263,6 @@ async def run(songid,easynetcomments):
         print("第",i,"页")
         await easynetcomments.get_comment(songid,pag)
         i+=1
-
-
-
-        
 
 
 if __name__ == "__main__":
