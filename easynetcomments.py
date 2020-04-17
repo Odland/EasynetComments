@@ -107,7 +107,7 @@ class EasynetComments(object):
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) '
                         'Chrome/66.0.3359.181 Safari/537.36'}
         
-    async def aes(self,msg,key):
+    def aes(self,msg,key):
         # key = '0CoJUm6Qyw8W8jud'
         # msg = '{"csrf_token":""}'
         iv = '0102030405060708'
@@ -127,7 +127,7 @@ class EasynetComments(object):
         return enctext
         
 
-    async def rsa(self,n,e,m):
+    def rsa(self,n,e,m):
         m = m[::-1]
         msg = bytes(m,"utf-8")
         # seckey = int(codecs.encode(msg, encoding='hex'), 16)**int(e, 16) % int(n, 16)
@@ -155,10 +155,10 @@ class EasynetComments(object):
     async def get_hot_comments(self,songid,msg = '{"limit":"20","csrf_token":""}'):
         # 获取第一页数据 包括热评和最新的评论
         istr = self.random_str()
-        enctext = await self.aes(msg,self.key)
-        encText = await self.aes(enctext, istr)
+        enctext = self.aes(msg,self.key)
+        encText = self.aes(enctext, istr)
         # RSA加密之后得到encSecKey的值
-        encSecKey = await self.rsa(self.n, self.e, istr)
+        encSecKey = self.rsa(self.n, self.e, istr)
         data = {'params': encText, 'encSecKey': encSecKey}
         url = "https://music.163.com/weapi/v1/resource/comments/R_SO_4_{}?csrf_token=".format(songid)
         # try:
@@ -208,10 +208,10 @@ class EasynetComments(object):
         istr = self.random_str()
         msg = '{"offset":"'+str(num)+'","total":"false","limit":"100","csrf_token":""}'
         url = "https://music.163.com/weapi/v1/resource/comments/R_SO_4_{}?csrf_token=".format(songid)
-        enctext = await self.aes(msg,self.key)
-        encText = await self.aes(enctext, istr)
+        enctext = self.aes(msg,self.key)
+        encText = self.aes(enctext, istr)
         # RSA加密之后得到encSecKey的值
-        encSecKey = await self.rsa(self.n, self.e, istr)
+        encSecKey = self.rsa(self.n, self.e, istr)
         data = {'params': encText, 'encSecKey': encSecKey}
         await self.get_comments_json(url,data,songid)
 
@@ -222,11 +222,11 @@ class EasynetComments(object):
             try:
                 async with aiohttp.ClientSession() as session:
                     async with session.post(url, data=data,headers=self.headers) as r:
-                        r = await self.session.post(url, headers=self.headers, data=data)
+                        # r = await self.session.post(url, headers=self.headers, data=data)
                 # if r.status_code == 200:
                 # 返回json格式的数据
                 # print(r.json()['comments'])
-                ss = json.loads(await r.text())
+                        ss = json.loads(await r.text())
                 # 存入数据库
                 # print(ss)
                 print(ss["comments"])
