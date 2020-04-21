@@ -1,4 +1,4 @@
-"""网易云JS逆向代码"""
+"""获取网易云某个歌手的所有歌曲的评论数据"""
 
 import random
 import math
@@ -16,7 +16,7 @@ import numpy as np
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
 
-myclient = pymongo.MongoClient("mongodb://{}:{}@{}:{}/{}".format("field","256257","120.24.150.107","27017","easynet"))
+myclient = pymongo.MongoClient("mongodb://{}:{}@{}:{}/{}".format("数据库的拥有者","密码","ip地址","端口号","数据库名"))
 db = myclient.easynet
 
 
