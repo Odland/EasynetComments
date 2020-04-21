@@ -273,7 +273,6 @@ if __name__ == "__main__":
         j,i = i*50,j
         tasks = (run(v,easynetcomments) for v in songid_list[i:j])
         # loop = asyncio.get_event_loop()
-        print("哈哈哈哈哈")
         asyncio.set_event_loop(asyncio.new_event_loop()) 
         loop = asyncio.get_event_loop()
         loop.run_until_complete(asyncio.gather(*tasks))
