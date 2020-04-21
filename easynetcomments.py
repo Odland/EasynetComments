@@ -11,7 +11,7 @@ import pymongo
 import random
 import time
 import sys
-
+from functools import wraps
 import numpy as np
 from requests.packages.urllib3.exceptions import InsecureRequestWarning
 requests.packages.urllib3.disable_warnings(InsecureRequestWarning)
@@ -223,7 +223,15 @@ class EasynetComments(object):
                 f += 1
             return
     
-
+def timer(fun):
+    @wraps(fun)
+    def run(*args,**kwargs):
+        start = time.time()
+        fun()
+        end = time.time()
+        print("用了{}个小时时间".format((end-start)/3600))
+    return run
+@timer
 def main():
     getalbumsongid = GetAlbumSongId()
     album = getalbumsongid.get_album()
